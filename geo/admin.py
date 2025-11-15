@@ -1,3 +1,3 @@
 from django.contrib import admin
-
-# Register your models here.
+from .models import IndiaState
+admin.site.register(IndiaState)

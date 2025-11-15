@@ -45,11 +45,11 @@ INSTALLED_APPS = [
     'accounts',
     'clinics',
     'brands',
-    'campaigns',
+    'campaigns', # OLD
     'content',
-    'sharing',
-    'messaging',
-    'registration',
+    'sharing', # OLD
+    'messaging', # OLD
+    'registration', # OLD
 ]
 
 MIDDLEWARE = [
