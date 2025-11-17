@@ -20,9 +20,13 @@ class Clinic(TimeStampedModel):
 
 class DoctorClinic(TimeStampedModel):
     doctor = models.ForeignKey("accounts.Doctor", on_delete=models.CASCADE)
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name="members")
-    is_primary = models.BooleanField(default=True)  # the owning/lead doctor
+    clinic = models.ForeignKey("clinics.Clinic", on_delete=models.CASCADE, related_name="members")
+    is_primary = models.BooleanField(default=True)      # lead/owning doctor
     role = models.CharField(max_length=32, default="doctor")  # doctor / staff
 
     class Meta:
         unique_together = [("doctor", "clinic")]
+
+    def __str__(self):
+        return f"{self.doctor_id} ↔ {self.clinic_id} ({'primary' if self.is_primary else 'member'})"
+
