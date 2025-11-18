@@ -19,9 +19,13 @@ class Doctor(PublicIdMixin, TimeStampedModel):
 
 class FieldRep(TimeStampedModel):
     brand = models.ForeignKey("brands.Brand", on_delete=models.CASCADE, related_name="field_reps")
+    phone_number = models.CharField(max_length=10, db_index=True)  # field rep number (10 digits, no country code)
     name = models.CharField(max_length=128, blank=True, null=True)
-    phone_number = models.CharField(max_length=10, db_index=True)
     email = models.EmailField(blank=True, null=True)
 
     class Meta:
         unique_together = [("brand", "phone_number")]
+
+    def __str__(self):
+        return f"{self.brand.name} FR {self.phone_number}"
+

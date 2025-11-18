@@ -1,16 +1,16 @@
-# registration/admin.py
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, reverse
 from django.http import HttpResponse
 from django.utils.html import format_html
-from django.urls import reverse
+
 from .models import RegistrationLink, DoctorRegistration
 
+@admin.register(RegistrationLink)
 class RegistrationLinkAdmin(admin.ModelAdmin):
-    list_display = ("label", "is_self", "is_active", "uses_count", "share_path", "download_txt")
+    list_display = ("label", "campaign", "is_self", "is_active", "uses_count", "share_path", "download_txt")
     readonly_fields = ("token", "uses_count", "created_at", "share_preview")
     search_fields = ("label", "token")
-    list_filter = ("is_self", "is_active")
+    list_filter = ("is_self", "is_active", "campaign__brand")
 
     def get_urls(self):
         urls = super().get_urls()
@@ -20,12 +20,13 @@ class RegistrationLinkAdmin(admin.ModelAdmin):
         return custom + urls
 
     def share_path(self, obj):
-        # relative path is safe to copy; absolute link comes from download endpoint
-        return f"/r/{obj.token}/"
+        path = f"/r/{obj.token}/" if obj.is_self or not obj.campaign_id else f"/fr/{obj.token}/"
+        return path
     share_path.short_description = "Shareable path"
 
     def share_preview(self, obj):
-        return format_html("<code>/r/{}/</code>", obj.token)
+        p = self.share_path(obj)
+        return format_html("<code>{}</code>", p)
 
     def download_txt(self, obj):
         url = reverse("admin:registrationlink-download", args=[obj.pk])
@@ -34,12 +35,14 @@ class RegistrationLinkAdmin(admin.ModelAdmin):
 
     def download_link(self, request, pk):
         obj = self.get_object(request, pk)
-        # build absolute URL
-        abs_url = request.build_absolute_uri(f"/r/{obj.token}/")
-        body = f"Self-registration link:\n{abs_url}\n"
+        abs_url = request.build_absolute_uri(self.share_path(obj))
+        body = f"Doctor registration link:\\n{abs_url}\\n"
         resp = HttpResponse(body, content_type="text/plain")
-        resp["Content-Disposition"] = f'attachment; filename="self_registration_{obj.pk}.txt"'
+        resp["Content-Disposition"] = f'attachment; filename="doctor_registration_{obj.pk}.txt"'
         return resp
 
-admin.site.register(RegistrationLink, RegistrationLinkAdmin)
-admin.site.register(DoctorRegistration)
+@admin.register(DoctorRegistration)
+class DoctorRegistrationAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "registered_via", "doctor", "clinic", "campaign", "fieldrep", "result")
+    list_filter = ("registered_via", "result", "campaign__brand")
+    search_fields = ("doctor__full_name", "doctor__imc_number", "campaign__name", "fieldrep__phone_number")

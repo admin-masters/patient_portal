@@ -7,6 +7,7 @@ from datetime import datetime
 import pathlib
 import uuid
 
+from campaigns.models import DoctorCampaign
 from accounts.models import Doctor
 from clinics.models import Clinic, DoctorClinic
 from core.models import Language
@@ -92,3 +93,30 @@ def upsert_doctor_and_clinic_from_form(request, form, *, language_code="en"):
     DoctorClinic.objects.get_or_create(doctor=doctor, clinic=clinic, defaults={"is_primary": True})
 
     return doctor, clinic, is_new_doctor
+
+
+class CampaignCapacityError(Exception):
+    pass
+
+def tag_doctor_to_campaign(doctor, campaign, *, fieldrep=None, via="fieldrep"):
+    """
+    Create DoctorCampaign tag if missing.
+    - Enforces campaign capacity (max_doctors) only when creating a *new* tag.
+    - Returns (tag_obj, created: bool)
+    """
+    tag, created = DoctorCampaign.objects.get_or_create(
+        doctor=doctor,
+        campaign=campaign,
+        defaults={
+            "end_date_snapshot": campaign.end_date,
+            "registered_via": via,
+            "fieldrep": fieldrep,
+        },
+    )
+    if created:
+        # Enforce capacity AFTER uniqueness test to allow existing tagged doctors to re-submit without error
+        if campaign.max_doctors and campaign.doctor_tags.count() > campaign.max_doctors:
+            # Rollback the new tag
+            tag.delete()
+            raise CampaignCapacityError("Campaign doctor limit reached.")
+    return tag, created

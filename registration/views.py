@@ -7,6 +7,15 @@ from .models import RegistrationLink, DoctorRegistration
 from .forms import DoctorSelfRegistrationForm
 from .services import upsert_doctor_and_clinic_from_form
 
+from django.views.generic import FormView, TemplateView
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
+from django.http import Http404
+from .models import RegistrationLink, DoctorRegistration
+from .forms import FieldRepRegistrationForm
+from .services import upsert_doctor_and_clinic_from_form, tag_doctor_to_campaign, CampaignCapacityError
+from accounts.models import FieldRep
+
 def _serialize_payload(form, doctor, clinic):
     """Return a JSON-serializable snapshot of submitted fields."""
     cd = dict(form.cleaned_data)
@@ -80,3 +89,82 @@ class SelfRegistrationSuccessView(TemplateView):
         slug = kwargs.get("slug")
         ctx["portal_url"] = self.request.build_absolute_uri(f"/portal/{slug}/")
         return ctx
+
+
+class FieldRepRegistrationView(FormView):
+    template_name = "registration/register_fieldrep.html"
+    form_class = FieldRepRegistrationForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.link = get_object_or_404(RegistrationLink, token=kwargs.get("token"))
+        if self.link.is_self or not self.link.campaign_id:
+            raise Http404("Not a field-rep campaign link.")
+        if not self.link.is_valid_now:
+            raise Http404("Registration link is inactive or expired.")
+        # Must be within campaign active dates
+        if not self.link.campaign.is_active:
+            raise Http404("Campaign is not active.")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["link"] = self.link
+        ctx["campaign"] = self.link.campaign
+        return ctx
+
+    def form_valid(self, form):
+        campaign = self.link.campaign
+        fieldrep_phone = form.cleaned_data["fieldrep_number"]
+
+        # Upsert doctor + clinic
+        doctor, clinic, is_new = upsert_doctor_and_clinic_from_form(self.request, form, language_code="en")
+
+        # Upsert field rep (brand + phone)
+        fieldrep, _ = FieldRep.objects.get_or_create(
+            brand=campaign.brand,
+            phone_number=fieldrep_phone,
+            defaults={"name": None, "email": None}
+        )
+
+        # Tag doctor to campaign (idempotent)
+        try:
+            tag, created = tag_doctor_to_campaign(doctor, campaign, fieldrep=fieldrep, via="fieldrep")
+        except CampaignCapacityError:
+            # audit and fail gracefully
+            DoctorRegistration.objects.create(
+                registration_link=self.link,
+                doctor=doctor,
+                clinic=clinic,
+                campaign=campaign,
+                fieldrep=fieldrep,
+                registered_via="fieldrep",
+                is_new_doctor=is_new,
+                payload_snapshot=form.cleaned_data,
+                result="cap_reached",
+                ip=self.request.META.get("REMOTE_ADDR"),
+                user_agent=self.request.META.get("HTTP_USER_AGENT"),
+            )
+            form.add_error(None, "This campaign has reached its doctor limit.")
+            return self.form_invalid(form)
+
+        # Increment link usage only when a new doctor tag was created
+        if created:
+            self.link.mark_used()
+
+        # Audit success/duplicate
+        DoctorRegistration.objects.create(
+            registration_link=self.link,
+            doctor=doctor,
+            clinic=clinic,
+            campaign=campaign,
+            fieldrep=fieldrep,
+            registered_via="fieldrep",
+            is_new_doctor=is_new,
+            payload_snapshot=form.cleaned_data,
+            result="success" if created else "duplicate",
+            ip=self.request.META.get("REMOTE_ADDR"),
+            user_agent=self.request.META.get("HTTP_USER_AGENT"),
+        )
+
+        self.success_url = reverse("registration:success", kwargs={"slug": clinic.portal_slug})
+        return super().form_valid(form)

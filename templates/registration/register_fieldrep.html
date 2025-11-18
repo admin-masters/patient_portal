@@ -1,0 +1,58 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Field Rep Doctor Registration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>label{display:block;margin:.5rem 0 .25rem} .err{color:#b91c1c}</style>
+</head>
+<body>
+  <h1>Campaign Doctor Registration</h1>
+  <p><strong>Campaign:</strong> {{ campaign.brand.name }} — {{ campaign.name }}</p>
+  <p><strong>Link:</strong> <code>/fr/{{ link.token }}/</code></p>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="err">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <label>Field Rep Number (10 digits)</label>
+    {{ form.fieldrep_number.errors }} {{ form.fieldrep_number }}
+
+    <hr>
+
+    <label>Full Name</label>
+    {{ form.full_name.errors }} {{ form.full_name }}
+
+    <label>Email Address</label>
+    {{ form.email.errors }} {{ form.email }}
+
+    <label>WhatsApp Number (10 digits)</label>
+    {{ form.whatsapp_number.errors }} {{ form.whatsapp_number }}
+
+    <label>IMC Number</label>
+    {{ form.imc_number.errors }} {{ form.imc_number }}
+
+    <label>Clinic Number (optional)</label>
+    {{ form.clinic_number.errors }} {{ form.clinic_number }}
+
+    <label>Address with postal code</label>
+    {{ form.address.errors }} {{ form.address }}
+
+    <label>Postal code</label>
+    {{ form.postal_code.errors }} {{ form.postal_code }}
+
+    <label>State</label>
+    {{ form.state.errors }} {{ form.state }}
+
+    <label>Upload Photo (optional)</label>
+    {{ form.photo.errors }} {{ form.photo }}
+
+    <div style="margin-top:1rem">
+      <button type="submit">Register Doctor</button>
+    </div>
+  </form>
+</body>
+</html>
