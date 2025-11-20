@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'sharing', # OLD
     'messaging', # OLD
     'registration',
+    'portal'
 ]
 
 MIDDLEWARE = [

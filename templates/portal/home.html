@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ clinic.name }} — Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --brand: {{ clinic.primary_color|default:"#1d4ed8" }}; }
+    body{font-family:system-ui,Segoe UI,Arial;margin:0;background:#f9fafb;color:#0f172a}
+    header{background:var(--brand);color:#fff;padding:1rem 1.25rem;display:flex;align-items:center;gap:.75rem}
+    header img{height:40px;border-radius:6px;background:#fff}
+    .wrap{max-width:1100px;margin:1rem auto;padding:0 1rem}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem}
+    .grid{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width:900px){ .grid{grid-template-columns: 1fr 2fr;} }
+    .banners{display:flex;flex-direction:column;gap:.5rem;margin-top:1rem}
+    .banner{border:1px dashed var(--brand);background:rgba(29,78,216,.06);padding:.6rem .8rem;border-radius:8px;font-size:.95rem}
+    .badge{display:inline-block;background:#e2e8f0;border-radius:999px;padding:.15rem .5rem;margin-left:.5rem;font-size:.75rem}
+    .result{padding:.75rem;border-bottom:1px solid #e2e8f0}
+    .muted{color:#475569}
+    .lang{font-size:.85rem}
+    .searchbar label{display:block;margin-bottom:.25rem}
+    .searchbar input, .searchbar select {width:100%;padding:.5rem .6rem;border:1px solid #cbd5e1;border-radius:8px}
+    .searchbar button{margin-top:.6rem;padding:.55rem .9rem;border:0;border-radius:8px;background:var(--brand);color:#fff}
+  </style>
+</head>
+<body>
+  <header>
+    {% if clinic.logo_url %}<img src="{{ clinic.logo_url }}" alt="logo">{% endif %}
+    <div>
+      <div style="font-weight:700">{{ clinic.name }}</div>
+      <div class="muted" style="font-size:.9rem">{{ clinic.address }}</div>
+    </div>
+    <div style="margin-left:auto">
+      <a href="{% url 'portal:logout' clinic.portal_slug %}" style="color:#fff;text-decoration:underline;">Sign out</a>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <div class="card searchbar">
+      <form method="get">
+        <label for="id_q">Search title/keywords</label>
+        {{ form.q }}
+        <label for="id_language" style="margin-top:.6rem">Language</label>
+        {{ form.language }}
+        <button type="submit">Search</button>
+      </form>
+
+      {% if banners %}
+        <div class="banners">
+          {% for b in banners %}
+            <div class="banner">
+              {{ b.text }} <span class="badge">{{ b.brand }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      {% if query %}
+        <div class="muted" style="margin-bottom:.5rem">Results for “{{ query }}” {% if selected_language %}<span class="lang">(lang: {{ selected_language }})</span>{% endif %}</div>
+        {% if results_localized %}
+          <div class="muted" style="font-weight:600;margin:.5rem 0">Matches in selected language</div>
+          {% for vi in results_localized %}
+            <div class="result">
+              <div><strong>{{ vi.title_local }}</strong></div>
+              <div class="muted">Subtopic: {{ vi.video.subtopic.slug }} • Area: {{ vi.video.subtopic.therapy_area.name }}</div>
+              <div class="lang">Available languages: {{ vi.video.i18n.values_list|default_if_none:"" }}</div>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if results_english %}
+          <div class="muted" style="font-weight:600;margin:.75rem 0 .25rem">English matches (fallback)</div>
+          {% for v in results_english %}
+            <div class="result">
+              <div><strong>{{ v.title_en }}</strong></div>
+              <div class="muted">Subtopic: {{ v.subtopic.slug }} • Area: {{ v.subtopic.therapy_area.name }}</div>
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        {% if not results_localized and not results_english %}
+          <div class="muted">No results found.</div>
+        {% endif %}
+      {% else %}
+        <div class="muted">Use the search box to find videos by title or keyword. You can filter by language.</div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
