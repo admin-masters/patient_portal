@@ -1,3 +1,7 @@
+# sharing/admin.py
 from django.contrib import admin
+from .models import ShareLink, ShareEvent, LinkVisit
 
-# Register your models here.
+admin.site.register(ShareLink)
+admin.site.register(ShareEvent)
+admin.site.register(LinkVisit)

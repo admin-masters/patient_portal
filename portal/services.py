@@ -2,7 +2,10 @@
 from django.db.models import Q
 from django.utils import timezone
 from typing import List, Dict
-
+from django.db import connection
+from django.db.models.expressions import RawSQL
+from django.db.models import Q
+from content.models import Video, VideoI18n
 from clinics.models import Clinic
 from accounts.models import Doctor
 from campaigns.models import DoctorCampaign, Campaign, CampaignSubtopic
@@ -10,23 +13,35 @@ from core.models import Language
 from content.models import Video, VideoI18n, SubtopicI18n
 
 def search_catalog(query: str, lang_code: str | None, limit: int = 50):
-    """
-    Returns (localized_hits, english_hits) lists.
-    localized_hits are VideoI18n; english_hits are Video.
-    """
-    localized = []
-    if lang_code:
-        localized = (VideoI18n.objects
-                     .select_related("video", "video__subtopic", "video__subtopic__therapy_area")
-                     .filter(language__code=lang_code, is_published=True)
-                     .filter(Q(title_local__search=query) | Q(keywords_local__search=query))
-                     [:limit])
-    english = (Video.objects
-               .select_related("subtopic", "subtopic__therapy_area")
-               .filter(is_active=True)
-               .filter(Q(title_en__search=query) | Q(keywords_en__search=query))
-               [:limit])
+    localized, english = [], []
+
+    if connection.vendor == "mysql":
+        if lang_code:
+            localized = (VideoI18n.objects
+                .select_related("video", "video__subtopic", "video__subtopic__therapy_area")
+                .filter(language__code=lang_code, is_published=True)
+                .annotate(score=RawSQL("MATCH(title_local, keywords_local) AGAINST (%s IN NATURAL LANGUAGE MODE)", (query,)))
+                .filter(score__gt=0)
+                .order_by("-score")[:limit])
+        english = (Video.objects
+            .select_related("subtopic", "subtopic__therapy_area")
+            .filter(is_active=True)
+            .annotate(score=RawSQL("MATCH(title_en, keywords_en) AGAINST (%s IN NATURAL LANGUAGE MODE)", (query,)))
+            .filter(score__gt=0)
+            .order_by("-score")[:limit])
+    else:
+        if lang_code:
+            localized = (VideoI18n.objects
+                .select_related("video", "video__subtopic", "video__subtopic__therapy_area")
+                .filter(language__code=lang_code, is_published=True)
+                .filter(Q(title_local__icontains=query) | Q(keywords_local__icontains=query))[:limit])
+        english = (Video.objects
+            .select_related("subtopic", "subtopic__therapy_area")
+            .filter(is_active=True)
+            .filter(Q(title_en__icontains=query) | Q(keywords_en__icontains=query))[:limit])
+
     return list(localized), list(english)
+
 
 def language_choices() -> List[str]:
     return list(Language.objects.filter(is_active=True).values_list("code", flat=True))

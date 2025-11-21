@@ -8,6 +8,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("registration.urls")),
     path("", include("portal.urls")),
+    path("", include("sharing.urls")),    # ← add
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,180 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ clinic.name }} — Share</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root { --brand: {{ clinic.primary_color|default:"#1d4ed8" }}; }
+    body{font-family:system-ui,Segoe UI,Arial;margin:0;background:#f8fafc}
+    header{background:var(--brand);color:#fff;padding:1rem}
+    .wrap{max-width:1000px;margin:1rem auto;padding:0 1rem}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem}
+    label{display:block;margin:.6rem 0 .25rem}
+    select,input,textarea{width:100%;padding:.55rem .7rem;border:1px solid #cbd5e1;border-radius:8px}
+    .row{display:grid;grid-template-columns:1fr 1fr; gap:1rem}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr; gap:1rem}
+    .btn{display:inline-block;margin-top:.8rem;padding:.6rem .9rem;border:0;border-radius:8px;background:var(--brand);color:#fff}
+    .btn.secondary{background:#0f172a}
+    .muted{color:#64748b}
+    .err{color:#b91c1c}
+    .radio{display:flex;gap:1rem;margin:.5rem 0}
+    .hint{font-size:.85rem;color:#475569}
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center;gap:.75rem">
+      {% if clinic.logo_url %}<img src="{{ clinic.logo_url }}" style="height:36px;border-radius:6px;background:#fff">{% endif %}
+      <div style="font-weight:700">{{ clinic.name }}</div>
+      <div style="margin-left:auto"><a href="{% url 'portal:home' clinic.portal_slug %}" style="color:#fff;text-decoration:underline">Back to portal</a></div>
+    </div>
+  </header>
+
+  <div class="wrap card">
+    <h2>Share with a patient</h2>
+    <form method="post" id="shareForm">
+      {% csrf_token %}
+      <div class="radio">
+        {{ form.share_kind }}
+      </div>
+
+      <div id="row-selectors">
+        <div class="row">
+          <div id="subtopic-block">
+            <label>Subtopic</label>
+            {{ form.subtopic }}
+            <div class="hint">Choose a subtopic (required for subtopic/video share).</div>
+          </div>
+          <div id="video-block">
+            <label>Video</label>
+            {{ form.video }}
+            <div class="hint">Choose a video (required for single video share).</div>
+          </div>
+        </div>
+
+        <label>Type to search titles/keywords</label>
+        {{ form.q }}
+        <div class="muted" id="suggestions" style="margin-top:.25rem"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Language</label>
+          {{ form.language }}
+          <div class="hint" id="langHint">For single video share, only languages available for that video will appear.</div>
+        </div>
+        <div>
+          <label>Patient WhatsApp number (10 digits)</label>
+          {{ form.patient_msisdn }}
+        </div>
+      </div>
+
+      <div>
+        <button type="submit" class="btn" id="btnShare">Share</button>
+        <a class="btn secondary" id="btnSharePortal" href="#" onclick="sharePortal(event)">Share entire portal</a>
+      </div>
+      <div class="muted" style="margin-top:.5rem">Sharing opens WhatsApp with a pre‑filled message. You can review and send.</div>
+    </form>
+  </div>
+
+<script>
+const subtopicSelect = document.getElementById("id_subtopic");
+const videoSelect = document.getElementById("id_video");
+const langSelect = document.getElementById("id_language");
+const qInput = document.getElementById("id_q");
+const suggestions = document.getElementById("suggestions");
+const form = document.getElementById("shareForm");
+const shareKindRadios = document.querySelectorAll("input[name='share_kind']");
+const clinicSlug = "{{ clinic.portal_slug }}";
+
+function getShareKind(){
+  for (const r of shareKindRadios) { if (r.checked) return r.value; }
+  return "video";
+}
+
+function fillVideosForSubtopic(){
+  const subtopic = subtopicSelect.value;
+  if (!subtopic) { videoSelect.innerHTML = ""; return; }
+  fetch(`/portal/${clinicSlug}/ajax/videos/?subtopic=`+subtopic)
+    .then(r=>r.json()).then(data=>{
+      videoSelect.innerHTML = "";
+      data.items.forEach(v=>{
+        const o=document.createElement("option"); o.value=v.id; o.textContent=v.title_en; videoSelect.appendChild(o);
+      });
+      // After repopulate, update languages if needed
+      updateLanguagesForVideo();
+    });
+}
+
+function updateLanguagesForVideo(){
+  const kind = getShareKind();
+  if (kind !== "video") { return; }
+  const vid = videoSelect.value;
+  if (!vid) { return; }
+  fetch(`/portal/${clinicSlug}/ajax/video-langs/?video=`+vid)
+    .then(r=>r.json()).then(data=>{
+      const allowed = new Set(data.langs || []);
+      for (const opt of langSelect.options) {
+        opt.disabled = !allowed.has(opt.value);
+      }
+      // pick first enabled if current disabled
+      const cur = langSelect.value;
+      if (cur && !allowed.has(cur)) {
+        for (const opt of langSelect.options) { if (!opt.disabled) { langSelect.value = opt.value; break; } }
+      }
+    });
+}
+
+function handleTypeahead(){
+  const q = (qInput.value || "").trim();
+  if (!q){ suggestions.textContent=""; return; }
+  const lang = langSelect.value || "";
+  fetch(`/portal/${clinicSlug}/ajax/suggest/?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`)
+    .then(r=>r.json()).then(data=>{
+      suggestions.innerHTML = data.items.map(t=>`<span style="display:inline-block;margin:.15rem .3rem;padding:.2rem .5rem;border:1px solid #cbd5e1;border-radius:999px;cursor:pointer" onclick="selectSuggestion('${t.replaceAll("'", "\\'")}')">${t}</span>`).join("");
+    });
+}
+function selectSuggestion(text){
+  qInput.value = text;
+}
+
+function onKindChange(){
+  const kind = getShareKind();
+  document.getElementById("video-block").style.display = (kind==="video") ? "block" : "none";
+  // For subtopic, show all languages as-is; for video, filter languages based on availability
+  for (const opt of langSelect.options) { opt.disabled = false; }
+  if (kind === "video") updateLanguagesForVideo();
+}
+shareKindRadios.forEach(r=>r.addEventListener("change", onKindChange));
+
+subtopicSelect.addEventListener("change", fillVideosForSubtopic);
+videoSelect.addEventListener("change", updateLanguagesForVideo);
+qInput.addEventListener("input", debounce(handleTypeahead, 250));
+
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+function sharePortal(e){
+  e.preventDefault();
+  // transform this submission into "portal" share: we post minimal fields via a dynamic form
+  const f = document.createElement("form");
+  f.method="post"; f.action="";
+  f.innerHTML = `
+    ${document.querySelector('[name=csrfmiddlewaretoken]').outerHTML}
+    <input type="hidden" name="share_kind" value="subtopic">
+    <input type="hidden" name="patient_msisdn" value="${document.getElementById('id_patient_msisdn').value}">
+    <input type="hidden" name="language" value="${langSelect.value}">
+  `;
+  // We'll signal to the view to treat it as "portal" by adding a fake field:
+  const h = document.createElement("input"); h.type="hidden"; h.name="__portal__"; h.value="1"; f.appendChild(h);
+  document.body.appendChild(f); f.submit();
+}
+
+form.addEventListener("submit", (e) => {
+  // If user clicked "Share", but kind==video ensure video selected; kind==subtopic ensure subtopic selected.
+  // Server enforces again; this is only UX sugar.
+});
+onKindChange(); // initial
+</script>
+</body>
+</html>

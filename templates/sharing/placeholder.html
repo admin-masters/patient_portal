@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Patient Education</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>body{font-family:system-ui,Segoe UI,Arial;margin:2rem} .muted{color:#475569}</style>
+</head>
+<body>
+  <h2>Patient Education</h2>
+  <p class="muted">This is a placeholder page for patient links.</p>
+  <ul>
+    <li>Type: {{ link.type }}</li>
+    <li>Language: {{ link.language_id }}</li>
+    <li>Clinic: {{ link.clinic.name }}</li>
+    {% if link.video %}<li>Video: {{ link.video.title_en }}</li>{% endif %}
+    {% if link.subtopic %}<li>Subtopic: {{ link.subtopic.slug }}</li>{% endif %}
+  </ul>
+  <p class="muted">Full patient pages (video/subtopic/portal with localization) will arrive in a later sprint.</p>
+</body>
+</html>

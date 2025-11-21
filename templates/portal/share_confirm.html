@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Share ready</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial;margin:0;background:#f8fafc}
+    .wrap{max-width:800px;margin:2rem auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem}
+    pre{white-space:pre-wrap;background:#f1f5f9;padding:1rem;border-radius:8px}
+    .btn{display:inline-block;margin:.5rem 0;padding:.6rem .9rem;border:0;border-radius:8px;background:#16a34a;color:#fff}
+    .muted{color:#475569}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h2>Message is ready</h2>
+    <p class="muted">Review the message below. When you click “Open WhatsApp”, it opens with this text pre‑filled.</p>
+    <pre>{{ message_preview }}</pre>
+    {% if wa_deeplink %}
+      <p><a class="btn" href="{{ wa_deeplink }}" target="_blank">Open WhatsApp</a></p>
+    {% else %}
+      <p class="muted">Deep‑link missing from session. You can copy and paste the message into WhatsApp.</p>
+    {% endif %}
+    <p class="muted">Share link: <a href="{{ share_link }}" target="_blank">{{ share_link }}</a></p>
+    <p><a href="{% url 'portal:share' clinic.portal_slug %}">Share another</a></p>
+  </div>
+</body>
+</html>

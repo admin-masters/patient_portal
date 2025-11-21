@@ -48,8 +48,8 @@ INSTALLED_APPS = [
     'brands',
     'campaigns', # OLD
     'content',
-    'sharing', # OLD
-    'messaging', # OLD
+    'sharing',
+    'messaging',
     'registration',
     'portal'
 ]
