@@ -113,70 +113,60 @@ def ajax_languages_for_video(request, slug):
     return JsonResponse({"langs": langs})
 
 # 3) typeahead: search by title/keywords (localized + english)
-def ajax_suggest_titles(request, slug):
-    if request.method != "GET":
-        raise Http404
-    q = (request.GET.get("q") or "").strip()
-    lang = request.GET.get("lang") or None
-    if not q:
-        return JsonResponse({"items": []})
-    localized = list(VideoI18n.objects.filter(is_published=True, language_id=lang)
-                     .filter(title_local__search=q)[:10]
-                     .values_list("title_local", flat=True)) if lang else []
-    english = list(Video.objects.filter(is_active=True)
-                   .filter(title_en__search=q)[:10]
-                   .values_list("title_en", flat=True))
-    # Merge unique, localized first
-    seen, items = set(), []
-    for t in localized + english:
-        if t not in seen:
-            items.append(t)
-            seen.add(t)
-    return JsonResponse({"items": items[:10]})
-
+from django.http import JsonResponse, Http404
+from django.db.models.expressions import RawSQL
+from content.models import Video, VideoI18n
 
 def ajax_suggest_titles(request, slug):
     if request.method != "GET":
         raise Http404
     q = (request.GET.get("q") or "").strip()
-    lang = request.GET.get("lang") or None
+    lang = (request.GET.get("lang") or "").strip().lower()
     if not q:
         return JsonResponse({"items": []})
 
-    if connection.vendor == "mysql":
-        localized = (list(
-            VideoI18n.objects.filter(is_published=True, language_id=lang)
-            .annotate(score=RawSQL(
-                "MATCH(title_local, keywords_local) AGAINST (%s IN NATURAL LANGUAGE MODE)", (q,)
-            ))
-            .filter(score__gt=0)
-            .order_by("-score")
-            .values_list("title_local", flat=True)[:10]
-        ) if lang else [])
-        english = list(
+    # 1) Localized (only when lang != 'en')
+    items_local = []
+    if lang and lang != "en":
+        try:
+            items_local = list(
+                VideoI18n.objects.filter(is_published=True, language_id=lang)
+                .annotate(_score=RawSQL(
+                    "MATCH(title_local, keywords_local) AGAINST (%s IN NATURAL LANGUAGE MODE)", (q,)
+                ))
+                .filter(_score__gt=0)
+                .order_by("-_score")
+                .values_list("title_local", flat=True)[:10]
+            )
+        except Exception:
+            # Fallback if FULLTEXT not available
+            items_local = list(
+                VideoI18n.objects.filter(is_published=True, language_id=lang, title_local__icontains=q)
+                .values_list("title_local", flat=True)[:10]
+            )
+
+    # 2) English always comes from Video
+    try:
+        items_en = list(
             Video.objects.filter(is_active=True)
-            .annotate(score=RawSQL(
+            .annotate(_score=RawSQL(
                 "MATCH(title_en, keywords_en) AGAINST (%s IN NATURAL LANGUAGE MODE)", (q,)
             ))
-            .filter(score__gt=0)
-            .order_by("-score")
+            .filter(_score__gt=0)
+            .order_by("-_score")
             .values_list("title_en", flat=True)[:10]
         )
-    else:
-        # Fallback (e.g., if someone runs SQLite locally)
-        localized = (list(
-            VideoI18n.objects.filter(is_published=True, language_id=lang, title_local__icontains=q)
-            .values_list("title_local", flat=True)[:10]
-        ) if lang else [])
-        english = list(
+    except Exception:
+        items_en = list(
             Video.objects.filter(is_active=True, title_en__icontains=q)
             .values_list("title_en", flat=True)[:10]
         )
 
-    # Merge unique, localized first
-    seen, items = set(), []
-    for t in localized + english:
+    # Merge unique: localized first then English
+    seen, merged = set(), []
+    for t in items_local + items_en:
         if t not in seen:
-            items.append(t)
-            seen.add(t)
-    return JsonResponse({"items": items[:10]})
+            merged.append(t); seen.add(t)
+
+    return JsonResponse({"items": merged[:10]})
+
