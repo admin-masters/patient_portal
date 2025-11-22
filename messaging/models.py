@@ -24,10 +24,13 @@ class MessageTemplateI18n(TimeStampedModel):
 
     class Meta:
         unique_together = [("template", "language")]
-
+# messaging/models.py (only the OutboundMessage class shown)
 class OutboundMessage(TimeStampedModel):
     share_event = models.ForeignKey("sharing.ShareEvent", on_delete=models.SET_NULL, null=True, blank=True, related_name="outbound_messages")
-    to_msisdn   = models.CharField(max_length=10, db_index=True)
+
+    to_msisdn   = models.CharField(max_length=10, db_index=True, blank=True)   # for WhatsApp
+    to_email    = models.EmailField(null=True, blank=True)                      # for email
+
     channel     = models.CharField(max_length=16, choices=[("whatsapp", "whatsapp"), ("email", "email")])
     language    = models.ForeignKey(Language, on_delete=models.PROTECT, to_field="code", db_column="language")
     template_key = models.CharField(max_length=64)

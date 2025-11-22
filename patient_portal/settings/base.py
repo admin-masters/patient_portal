@@ -106,3 +106,20 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Celery
+CELERY_BROKER_URL = env("CELERY_BROKER_URL", default="redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:6379/1")
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_TASK_DEFAULT_QUEUE = "default"
+
+# WhatsApp / Email toggles
+WABA_ENABLE = env.bool("WABA_ENABLE", default=False)
+WABA_PROVIDER = env("WABA_PROVIDER", default="meta")
+WABA_PHONE_NUMBER_ID = env("WABA_PHONE_NUMBER_ID", default="")
+WABA_TOKEN = env("WABA_TOKEN", default="")
+
+SENDGRID_ENABLE = env.bool("SENDGRID_ENABLE", default=False)
+SENDGRID_API_KEY = env("SENDGRID_API_KEY", default="")
+SENDGRID_FROM_EMAIL = env("SENDGRID_FROM_EMAIL", default="no-reply@example.com")
+SENDGRID_FROM_NAME = env("SENDGRID_FROM_NAME", default="Patient Education")
