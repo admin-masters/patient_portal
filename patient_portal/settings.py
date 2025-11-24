@@ -145,3 +145,19 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# --- Messaging channel toggles & credentials ---
+def _bool_env(name: str, default: bool = True) -> bool:
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+# WhatsApp Business API (WABA)
+WABA_ENABLE = _bool_env("WABA_ENABLE", True)
+WABA_PROVIDER = os.getenv("WABA_PROVIDER", "meta")
+WABA_PHONE_NUMBER_ID = os.getenv("WABA_PHONE_NUMBER_ID", "")
+WABA_TOKEN = os.getenv("WABA_TOKEN", "")
+
+# Email (SendGrid)
+SENDGRID_ENABLE = _bool_env("SENDGRID_ENABLE", True)
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "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")
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "products@inditech.co.in")
+SENDGRID_FROM_NAME = os.getenv("SENDGRID_FROM_NAME", "Patient Education")

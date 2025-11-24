@@ -123,3 +123,5 @@ SENDGRID_ENABLE = env.bool("SENDGRID_ENABLE", default=False)
 SENDGRID_API_KEY = env("SENDGRID_API_KEY", default="")
 SENDGRID_FROM_EMAIL = env("SENDGRID_FROM_EMAIL", default="no-reply@example.com")
 SENDGRID_FROM_NAME = env("SENDGRID_FROM_NAME", default="Patient Education")
+
+

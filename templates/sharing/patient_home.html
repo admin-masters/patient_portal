@@ -1,0 +1,21 @@
+{% extends "sharing/patient_base.html" %}
+{% block title %}{{ clinic.name }} — Home{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 style="margin:.2rem 0 1rem 0">{{ labels.subtopics }}</h2>
+  <div class="list">
+    {% for s in subtopics %}
+      <a class="item" href="{{ s.url }}">
+        {% if s.thumb %}
+          <img src="{{ s.thumb }}" class="thumb" alt="">
+        {% else %}
+          <div class="thumb"></div>
+        {% endif %}
+        <h4>{{ s.name }}</h4>
+      </a>
+    {% empty %}
+      <div class="muted">No subtopics published yet.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

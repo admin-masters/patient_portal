@@ -1,0 +1,25 @@
+{% extends "sharing/patient_base.html" %}
+{% block title %}{{ video_title }} — {{ clinic.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 style="margin:.2rem 0">{{ video_title }}</h2>
+
+  {% if youtube_id %}
+    <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;border:1px solid #e2e8f0">
+      <iframe
+        src="https://www.youtube.com/embed/{{ youtube_id }}?rel=0"
+        title="{{ video_title }}"
+        style="position:absolute;top:0;left:0;width:100%;height:100%;border:0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen></iframe>
+    </div>
+  {% else %}
+    <div class="muted">Video unavailable.</div>
+  {% endif %}
+
+  <div style="margin-top:1rem;display:flex;gap:1rem;flex-wrap:wrap">
+    <a class="btn" href="{{ more_url }}">{{ labels.for_more_videos }}</a>
+    <a class="btn" href="{{ home_url }}">{{ labels.back_to_home }}</a>
+  </div>
+</div>
+{% endblock %}

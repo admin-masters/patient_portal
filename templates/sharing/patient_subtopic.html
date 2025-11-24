@@ -1,0 +1,30 @@
+{% extends "sharing/patient_base.html" %}
+{% block title %}{{ subtopic_name }} — {{ clinic.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div style="display:flex;align-items:center;gap:1rem">
+    {% if subtopic_thumb %}
+      <img src="{{ subtopic_thumb }}" alt="" style="height:60px;border-radius:8px;border:1px solid #e2e8f0">
+    {% endif %}
+    <div>
+      <h2 style="margin:.2rem 0">{{ subtopic_name }}</h2>
+      <div><a class="btn" href="{{ home_url }}">{{ labels.back_to_home }}</a></div>
+    </div>
+  </div>
+
+  <div class="list" style="margin-top:1rem">
+    {% for v in videos %}
+      <a class="item" href="{{ v.url }}">
+        {% if v.thumb %}
+          <img src="{{ v.thumb }}" class="thumb" alt="">
+        {% else %}
+          <div class="thumb"></div>
+        {% endif %}
+        <h4>{{ v.title }}</h4>
+      </a>
+    {% empty %}
+      <div class="muted">No videos published in this subtopic.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
