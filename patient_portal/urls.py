@@ -12,6 +12,7 @@ urlpatterns = [
     path("", include("registration.urls")),
     path("", include("portal.urls")),
     path("", include("sharing.urls")),    # ← add
+    path("", include("analytics.urls")),   # ← add
 
     path("hooks/waba/", waba_webhook, name="waba_webhook"),
     path("hooks/sendgrid/", sendgrid_webhook, name="sendgrid_webhook"),

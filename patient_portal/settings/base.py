@@ -125,3 +125,4 @@ SENDGRID_FROM_EMAIL = env("SENDGRID_FROM_EMAIL", default="no-reply@example.com")
 SENDGRID_FROM_NAME = env("SENDGRID_FROM_NAME", default="Patient Education")
 
 
+DATA_RETENTION_DAYS = env.int("DATA_RETENTION_DAYS", default=90)

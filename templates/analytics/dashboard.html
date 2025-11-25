@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Analytics & Governance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:system-ui,Segoe UI,Arial;margin:1rem}
+    .row{display:grid;grid-template-columns:1fr;gap:1rem}
+    @media(min-width:1100px){ .row{grid-template-columns:1fr 1fr} }
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #e2e8f0;padding:.5rem;text-align:left}
+    th{background:#f1f5f9}
+    .muted{color:#475569}
+    .right{text-align:right}
+  </style>
+</head>
+<body>
+  <h1>Analytics & Governance</h1>
+
+  <form method="get" action="" style="margin: .5rem 0 1rem 0">
+    <label>From: <input type="date" name="from" value="{{ start }}"></label>
+    <label>To: <input type="date" name="to" value="{{ end }}"></label>
+    <button type="submit">Apply</button>
+  </form>
+
+  <div class="row">
+    <div class="card">
+      <h2>Shares by Doctor</h2>
+      <p class="muted">CTR = unique links clicked ÷ shares</p>
+      <p>
+        <a href="{% url 'analytics:export' 'doctor' %}?from={{ start }}&to={{ end }}">Export CSV</a>
+      </p>
+      <table>
+        <thead><tr><th>Doctor</th><th>Clinic</th><th class="right">Shares</th><th class="right">Clicked</th><th class="right">CTR</th></tr></thead>
+        <tbody>
+          {% for r in by_doc %}
+            <tr>
+              <td>{{ r.doctor_name }}</td>
+              <td>{{ r.clinic_name }}</td>
+              <td class="right">{{ r.shares }}</td>
+              <td class="right">{{ r.clicked }}</td>
+              <td class="right">{{ r.ctr|floatformat:2 }}%</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="muted">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="2" class="right">TOTAL</th>
+            <th class="right">{{ by_doc_totals.shares }}</th>
+            <th class="right">{{ by_doc_totals.clicked }}</th>
+            <th class="right">{{ by_doc_totals.ctr|floatformat:2 }}%</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Shares by Clinic</h2>
+      <p class="muted">CTR = unique links clicked ÷ shares</p>
+      <p>
+        <a href="{% url 'analytics:export' 'clinic' %}?from={{ start }}&to={{ end }}">Export CSV</a>
+      </p>
+      <table>
+        <thead><tr><th>Clinic</th><th class="right">Shares</th><th class="right">Clicked</th><th class="right">CTR</th></tr></thead>
+        <tbody>
+          {% for r in by_clinic %}
+            <tr>
+              <td>{{ r.clinic_name }}</td>
+              <td class="right">{{ r.shares }}</td>
+              <td class="right">{{ r.clicked }}</td>
+              <td class="right">{{ r.ctr|floatformat:2 }}%</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th class="right">TOTAL</th>
+            <th class="right">{{ by_clinic_totals.shares }}</th>
+            <th class="right">{{ by_clinic_totals.clicked }}</th>
+            <th class="right">{{ by_clinic_totals.ctr|floatformat:2 }}%</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Shares by Brand (campaign‑attributed)</h2>
+      <p class="muted">A share is counted for each active campaign brand the doctor had on the share date.</p>
+      <p>
+        <a href="{% url 'analytics:export' 'brand' %}?from={{ start }}&to={{ end }}">Export CSV</a>
+      </p>
+      <table>
+        <thead><tr><th>Brand</th><th class="right">Shares</th><th class="right">Clicked</th><th class="right">CTR</th></tr></thead>
+        <tbody>
+          {% for r in by_brand %}
+            <tr>
+              <td>{{ r.brand_name }}</td>
+              <td class="right">{{ r.shares }}</td>
+              <td class="right">{{ r.clicked }}</td>
+              <td class="right">{{ r.ctr|floatformat:2 }}%</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="muted">No data.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th class="right">TOTAL</th>
+            <th class="right">{{ by_brand_totals.shares }}</th>
+            <th class="right">{{ by_brand_totals.clicked }}</th>
+            <th class="right">{{ by_brand_totals.ctr|floatformat:2 }}%</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Active Campaigns (today)</h2>
+      <table>
+        <thead><tr><th>Brand</th><th>Campaign</th><th>Therapy Area</th><th>Start</th><th>End</th><th class="right">Tagged Doctors</th><th class="right">Max</th><th class="right">Left</th></tr></thead>
+        <tbody>
+          {% for c in campaigns %}
+            <tr>
+              <td>{{ c.brand }}</td>
+              <td>{{ c.campaign }}</td>
+              <td>{{ c.therapy_area }}</td>
+              <td>{{ c.start_date }}</td>
+              <td>{{ c.end_date }}</td>
+              <td class="right">{{ c.doctors_tagged }}</td>
+              <td class="right">{{ c.max_doctors|default:"∞" }}</td>
+              <td class="right">{{ c.capacity_left|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="muted">No active campaigns.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
