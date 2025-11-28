@@ -4,6 +4,8 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from .models import OutboundMessage
+import hmac, hashlib
+from django.conf import settings
 
 @csrf_exempt
 @require_POST
@@ -103,3 +105,20 @@ def sendgrid_webhook(request):
         updated += 1
 
     return JsonResponse({"ok": True, "updated": updated})
+
+def _valid_meta_signature(request):
+    secret = getattr(settings, "WABA_APP_SECRET", "")
+    if not secret:
+        return True  # disabled
+    sig = request.headers.get("X-Hub-Signature-256", "")
+    if not sig.startswith("sha256="):
+        return False
+    expected = hmac.new(secret.encode("utf-8"), msg=request.body, digestmod=hashlib.sha256).hexdigest()
+    return hmac.compare_digest(sig.split("=",1)[1], expected)
+
+@csrf_exempt
+@require_POST
+def waba_webhook(request):
+    if not _valid_meta_signature(request):
+        return HttpResponseBadRequest("Invalid signature")
+    # ... existing body ...

@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 
 from messaging.views_dashboard import messages_dashboard
 from messaging.views_webhooks import waba_webhook, sendgrid_webhook
+from core.views import healthz
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -18,6 +19,8 @@ urlpatterns = [
     path("hooks/sendgrid/", sendgrid_webhook, name="sendgrid_webhook"),
 
     path("ops/messages/", messages_dashboard, name="messages_dashboard"),
+
+    path("healthz", healthz)
 ]
 
 if settings.DEBUG:

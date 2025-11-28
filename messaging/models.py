@@ -40,5 +40,12 @@ class OutboundMessage(TimeStampedModel):
     status = models.CharField(max_length=32, default="queued")  # queued/sent/delivered/failed
     status_meta = models.JSONField(default=dict, blank=True)
 
+    dedupe_key = models.CharField(max_length=64, blank=True, db_index=True)  # new
+
     class Meta:
-        indexes = [models.Index(fields=["channel", "status", "created_at"])]
+        indexes = [
+            models.Index(fields=["channel", "status", "created_at"]),
+            models.Index(fields=["provider_message_id"]),  # new
+            models.Index(fields=["dedupe_key"]),  # new
+        ]
+

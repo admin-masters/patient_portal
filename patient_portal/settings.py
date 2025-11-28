@@ -162,3 +162,16 @@ SENDGRID_ENABLE = _bool_env("SENDGRID_ENABLE", True)
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "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")
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "products@inditech.co.in")
 SENDGRID_FROM_NAME = os.getenv("SENDGRID_FROM_NAME", "Patient Education")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "root": {"handlers": ["console"], "level": "INFO"},
+    "loggers": {
+        "django.db.backends": {"handlers": ["console"], "level": "WARNING"},  # set to DEBUG to see SQL
+        "celery": {"handlers": ["console"], "level": "INFO"},
+    },
+}
