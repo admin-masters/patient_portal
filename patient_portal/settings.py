@@ -92,9 +92,9 @@ WSGI_APPLICATION = 'patient_portal.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'patient_education'),
-        'USER': os.getenv('DB_USER', 'root'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'password'),
+        'NAME': os.getenv('DB_NAME', 'patient_portal'),
+        'USER': os.getenv('DB_USER', 'patient_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'Bv9ALOgzFszxDYso'),
         'HOST': os.getenv('DB_HOST', '127.0.0.1'),  # or your RDS endpoint
         'PORT': os.getenv('DB_PORT', '3306'),
         'OPTIONS': {
